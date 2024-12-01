@@ -60,6 +60,11 @@ B3: Chạy file search và nhận kết quả
 docker exec -it spark-master /spark/bin/spark-submit /tmp/search.py
 ```
 
+# Tắt các container
+```
+docker-compose down
+```
 # Note
-
-Kiểm tra các Session của Spark tại: http://localhost:8080
+- Mở cmd tại đúng thư mục dự án để có thể chạy các docker containers
+- Kiểm tra các Session của Spark tại: http://localhost:8080
+- Mỗi lần tắt các Docker Container thì các file xử lý và tìm kiếm dữ liệu sẽ mất và phải copy lại vào Spark-master nhưng dữ liệu ở hadoop vẫn được dữ nguyên

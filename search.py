@@ -206,13 +206,29 @@ def search(arr, word):
     return left if arr[left] <= word else left - 1
 
 # Tính điểm của từng document
+scores = dict()
 def calc_score(input):
-  docs = input.split("#")
-  for doc in docs:
-    docId, count = doc.split(":")
-    title, text, categories, infobox, external_links = count.split("-")
-    score = weight['t'] * int(title) + weight['b'] * int(text) + weight['i'] * int(infobox) + weight['c'] * int(categories) + weight['e'] * int(external_links) + weight['r']
-    print(f"DocId: {docId}, Score: {score}")
+    docs = input.split("#")
+    for doc in docs:
+        docId, count = doc.split(":")
+        title, text, categories, infobox, external_links = count.split("-")
+        score = weight['t'] * int(title) + weight['b'] * int(text) + weight['i'] * int(infobox) + weight['c'] * int(categories) + weight['e'] * int(external_links) + weight['r']
+        # print(docId, score)
+        if docId in scores:
+            scores[docId] += score
+        else:
+            scores[docId] = score
+
+def print_output():
+    if not scores:
+        print("\n\n\n\n\n\n\n\n=============================================================\n\n")
+        print("Không tìm thấy kết quả nào!")
+        print("\n\n=============================================================\n\n\n\n\n\n\n\n")
+        return
+    print("\n\n\n\n\n\n\n\n=============================================================\n\n\n\n\n\n\n\n")
+    for key in sorted(scores, key=scores.get, reverse=True):
+        print(f"{key}: {scores[key]}")
+    print("\n\n\n\n\n\n\n\n=============================================================\n\n\n\n\n\n\n\n")
 
 # Đọc file secondary index
 df_2nd = spark.read.text("hdfs://namenode:9000/user/root/indexes/secondary_index")
@@ -240,11 +256,12 @@ for word in word_list:
     target_df = spark.read.parquet(f"hdfs://namenode:9000/user/root/indexes/index_{target_index}")
 
     # Lấy thông tin về các lần xuất hiện của từ trong các document
-    documents_count = target_df.filter(col("Word") == search_word).select(col("Document_Counts")).collect()
+    documents_count = target_df.filter(col("Word") == word).select(col("Document_Counts")).collect()
 
-    result = ""
     if documents_count:
         result = documents_count[0]["Document_Counts"]
+        calc_score(result)
 
-    calc_score(result)
+print_output()
 
+spark.stop()
