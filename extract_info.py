@@ -6,6 +6,8 @@ from pyspark.ml.feature import StopWordsRemover
 import re
 from nltk.stem import PorterStemmer
 
+PATH_TO_FILE = '/user/root/input/mini_wiki_dump.txt'
+
 # Định nghĩa hàm tách Infobox từ phần nội dung
 schema = StructType([
     StructField("Infobox", StringType(), True),
@@ -59,7 +61,7 @@ spark = SparkSession.builder.appName("Wiki XML").master("spark://spark-master:70
 stemmer = PorterStemmer()
 
 # Đọc dữ liệu từ file (chỉ lấy 5 cột đầu của dữ liệu)
-_ = spark.read.format("xml").option("rowTag", "page").load('hdfs://namenode:9000/user/root/input/mini_wiki_dump.txt')
+_ = spark.read.format("xml").option("rowTag", "page").load('hdfs://namenode:9000' + PATH_TO_FILE)
 _ = _.select(
     initcap(col("id")).alias("Id"),
     initcap(col("title")).alias("Title"),

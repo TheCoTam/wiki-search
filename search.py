@@ -3,6 +3,9 @@ from pyspark.sql.functions import col
 from nltk.stem import PorterStemmer
 import re
 
+# Từ cần tìm kiếm
+search_string = "1914 abeldo"
+
 stop_words = [
     'a',
     'about',
@@ -226,8 +229,6 @@ weight = {
     'e': 50,
 }
 
-# Từ cần tìm kiếm
-search_string = "1914 abeldo"
 word_list = re.findall(r'[a-zA-Z0-9]+', search_string.lower())
 word_list = [stemmer.stem(word) for word in word_list if word not in stop_words]
 
@@ -243,6 +244,7 @@ for word in word_list:
 
     result = ""
     if documents_count:
-    result = documents_count[0]["Document_Counts"]
+        result = documents_count[0]["Document_Counts"]
 
     calc_score(result)
+
