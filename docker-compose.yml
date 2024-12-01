@@ -112,6 +112,30 @@ services:
       - spark-master
     networks:
       - hadoop-network
+
+  spark-worker2:
+    build: ./spark-workers
+    container_name: spark-worker-2
+    restart: always
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER=spark://spark-master:7077
+    depends_on:
+      - spark-master
+    networks:
+      - hadoop-network
+
+  spark-worker3:
+    build: ./spark-workers
+    container_name: spark-worker-3
+    restart: always
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER=spark://spark-master:7077
+    depends_on:
+      - spark-master
+    networks:
+      - hadoop-network
   
 volumes:
   hadoop_namenode:
