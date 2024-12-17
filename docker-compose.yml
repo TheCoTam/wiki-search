@@ -79,7 +79,7 @@ services:
   historyserver:
     image: bde2020/hadoop-historyserver:2.0.0-hadoop3.2.1-java8
     container_name: historyserver
-    # restart: always
+    restart: always
     environment:
       SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode:9864 resourcemanager:8088"
     volumes:
@@ -89,13 +89,47 @@ services:
     networks:
       - hadoop-network
 
-  spark-master:
-    build: ./spark-master
-    container_name: spark-master
-    # restart: always
+  # spark-master:
+  #   build: ./spark-master
+  #   container_name: spark-master
+  #   # restart: always
+  #   environment:
+  #     - SPARK_MODE=master
+  #     - SPARK_MASTER_HOST=spark-master  # Đặt tên của Spark Master
+  #     - SPARK_MASTER_PORT=7077         # Cổng Spark Master
+  #     - SPARK_MASTER_WEBUI_PORT=8080   # Cổng UI của Spark Master
+  #     - SPARK_WORKER_WEBUI_PORT=8081  # Cổng UI của Spark Worker
+  #     - SPARK_MASTER_REST_ENABLED=true # Bật REST API cho Spark Master
+  #     - SPARK_MASTER_REST_PORT=6066    # Cổng REST API
+  #     - SPARK_LOG_LEVEL=ERROR
+  #   ports:
+  #     - "4040:4040"
+  #     - "8080:8080"
+  #     - "6066:6066"
+  #     - "7077:7077"
+  #   networks:
+      # - hadoop-network
+
+  spark-worker:
+    build: ./spark-workers
+    container_name: spark-worker
+    restart: always
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER=spark://spark-master:7077
+    depends_on:
+      - spark-master-new
+    ports:
+      - "8081:8081"
+    networks:
+      - hadoop-network
+
+  spark-master-new:
+    build: ./spark-master-new
+    container_name: spark-master-new
     environment:
       - SPARK_MODE=master
-      - SPARK_MASTER_HOST=spark-master  # Đặt tên của Spark Master
+      - SPARK_MASTER_HOST=spark-master-new  # Đặt tên của Spark Master
       - SPARK_MASTER_PORT=7077         # Cổng Spark Master
       - SPARK_MASTER_WEBUI_PORT=8080   # Cổng UI của Spark Master
       - SPARK_WORKER_WEBUI_PORT=8081  # Cổng UI của Spark Worker
@@ -110,40 +144,6 @@ services:
     networks:
       - hadoop-network
 
-  spark-worker:
-    build: ./spark-workers
-    container_name: spark-worker
-    restart: always
-    environment:
-      - SPARK_MODE=worker
-      - SPARK_MASTER=spark://spark-master:7077
-    depends_on:
-      - spark-master
-    ports:
-      - "8081:8081"
-    networks:
-      - hadoop-network
-
-  spark-master-new:
-    build: ./spark-master-new
-    container_name: spark-master-new
-    environment:
-      - SPARK_MODE=master
-      - SPARK_MASTER_HOST=spark-master-new
-      - SPARK_MASTER_PORT=7078  # Thay đổi cổng Spark Master
-      - SPARK_MASTER_WEBUI_PORT=8081  # Thay đổi cổng UI của Spark Master
-      - SPARK_WORKER_WEBUI_PORT=8082  # Thay đổi cổng UI của Spark Worker
-      - SPARK_MASTER_REST_ENABLED=true
-      - SPARK_MASTER_REST_PORT=6067  # Thay đổi cổng REST API
-      - SPARK_LOG_LEVEL=ERROR
-    ports:
-      - "4041:4040"  # Thay đổi cổng Spark UI
-      - "8081:8080"  # Thay đổi cổng UI
-      - "6067:6066"  # Thay đổi cổng REST API
-      - "7078:7077"  # Thay đổi cổng Master
-    networks:
-      - hadoop-network
-
   spark-worker2:
     build: ./spark-workers
     container_name: spark-worker-2
@@ -152,7 +152,7 @@ services:
       - SPARK_MODE=worker
       - SPARK_MASTER=spark://spark-master:7077
     depends_on:
-      - spark-master
+      - spark-master-new
     ports:
       - "8082:8081"
     networks:
@@ -166,7 +166,7 @@ services:
       - SPARK_MODE=worker
       - SPARK_MASTER=spark://spark-master:7077
     depends_on:
-      - spark-master
+      - spark-master-new
     ports:
       - "8083:8081"
     networks:
