@@ -125,7 +125,7 @@ services:
       - hadoop-network
 
   spark-master-new:
-    image: bitnami/spark:latest
+    build: ./spark-master-new
     container_name: spark-master-new
     environment:
       - SPARK_MODE=master

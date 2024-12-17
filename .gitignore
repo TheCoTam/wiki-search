@@ -1,3 +1,6 @@
 data/
 test1.py
 test2.py
+tmp.py
+extract_info_2.py
+connect_rabbitmq.py
