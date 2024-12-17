@@ -68,3 +68,11 @@ docker-compose down
 - Mở cmd tại đúng thư mục dự án để có thể chạy các docker containers
 - Kiểm tra các Session của Spark tại: http://localhost:8080
 - Mỗi lần tắt các Docker Container thì các file xử lý và tìm kiếm dữ liệu sẽ mất và phải copy lại vào Spark-master nhưng dữ liệu ở hadoop vẫn được dữ nguyên
+- Để xóa 1 images sử dụng lệnh:
+```
+docker rmi <images_ID>
+```
+# Running Time Optimization
+- trích rút dữ liệu, chuyển các chuỗi ký tự của các mảng về dạng mảng -> thời gian thực thi: ~10-13s
+- Loại bỏ các stop_words -> thời gian thực thi: ~15s
+- Chuyển từ về dạng gốc -> thời gian thực thi: ~3m -> sử dụng UDF Vectorized với Pandas -> cài được cmake nhưng chưa cài được pyarrow

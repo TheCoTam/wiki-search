@@ -57,7 +57,7 @@ def stem_words(words):
     return [stem_cache.setdefault(word, stemmer.stem(word)) for word in words]
 
 # Khởi tạo SparkSession
-spark = SparkSession.builder.appName("Extract Wiki XML").master("spark://spark-master:7077").config("spark.executor.memory", "2g").getOrCreate()
+spark = SparkSession.builder.appName("Extract Wiki XML").master("spark://spark-master:7077").getOrCreate()
 stemmer = PorterStemmer()
 
 # Đọc dữ liệu từ file (chỉ lấy 5 cột đầu của dữ liệu)
@@ -67,22 +67,20 @@ _ = _.select(
     initcap(col("title")).alias("Title"),
     initcap(col("revision.text._VALUE")).alias("Text")
 )
-df = _.limit(20)
+df = _.limit(50)
 _.unpersist()
 
 # Lọc và trích xuất thông tin từ phần nội dung
 df = df.withColumn("Title", lower(col("Title")))
 df = df.withColumn("Text", lower(col("Text")))
-# remove {{cite **}} or {{vcite **}}
-df = df.withColumn("Text", regexp_replace(col("Text"), r'\{\{(cite|vcite)\s+[^\}]*\}\}', ''))
-# remove Punctuation (. , ; _ ( ) / " ' =)
-df = df.withColumn("Text", regexp_replace(col("Text"), r'[.,;_()/"\'=]', ' '))
-# remove [[file:]]
-df = df.withColumn("Text", regexp_replace(col("Text"), r'\[\[file:[^\]]*\]\]', ''))
-# remove <...> tag
-df = df.withColumn("Text", regexp_replace(col("Text"), r'<[^>]*>', ''))
-# remove none ASCII characters
-df = df.withColumn("Text", regexp_replace(col("Text"), r'[^\x00-\x7F]+', ''))
+text_regex = (
+    r'\{\{(cite|vcite)\s+[^\}]*\}\}'  # Xóa {{cite...}} hoặc {{vcite...}}
+    r'|[.,;_()/"\'=]'                 # Xóa dấu câu
+    r'|\[\[file:[^\]]*\]\]'           # Xóa [[file:...]]
+    r'|<[^>]*>'                      # Xóa thẻ HTML <...>
+    r'|[^\x00-\x7F]+'                # Xóa ký tự không phải ASCII
+)
+df = df.withColumn("Text", regexp_replace(col("Text"), text_regex, ' '))
 # extract categories
 df = df.withColumn("Categories", expr("regexp_extract_all(Text, '\\\\\\[\\\\[category:(.*?)\\\\]\\]', 1)"))
 # extract infobox
@@ -130,24 +128,48 @@ for column in columns:
 df.cache()
 
 # Đếm các từ xuất hiện tại cột Title
-words_from_title = df.select("Id", "Title").withColumn("Title", filter(col("Title"), lambda x: x != "")).filter(size(col("Title")) != 0)
-words_from_title = words_from_title.withColumn("Word", explode("Title")).drop("Title").groupBy("Id", "Word").agg(count("Word").alias("Title"))
+words_from_title = (
+    df.select("Id", "Title")
+    .withColumn("Word", explode(col("Title")))
+    .groupBy("Id", "Word")
+    .agg(count("Word").alias("Title"))
+    .filter(col("Word") != "")
+)
 
 # Đếm các từ xuất hiện trong cột Categories
-words_from_categories = df.select(["Id", "Categories"]).withColumn("Categories", filter(col("Categories"), lambda x: x != "")).filter(size(col("Categories")) != 0)
-words_from_categories = words_from_categories.withColumn("Word", explode("Categories")).drop("Categories").groupBy("Id", "Word").agg(count("Word").alias("Categories"))
+words_from_categories = (
+    df.select("Id", "Categories")
+    .withColumn("Word", explode(col("Categories")))
+    .groupBy("Id", "Word")
+    .agg(count("Word").alias("Categories"))
+    .filter(col("Word") != "")
+)
 
 # Đếm các từ xuất hiện trong Infobox
-words_from_infobox = df.select("Id", "Infobox").withColumn("Infobox", filter(col("Infobox"), lambda x: x != "")).filter(size(col("Infobox")) != 0)
-words_from_infobox = words_from_infobox.withColumn("Word", explode("Infobox")).drop("Categories").groupBy("Id", "Word").agg(count("Word").alias("Infobox"))
+words_from_infobox = (
+    df.select("Id", "Infobox")
+    .withColumn("Word", explode(col("Infobox")))
+    .groupBy("Id", "Word")
+    .agg(count("Word").alias("Infobox"))
+    .filter(col("Word") != "")
+)
 
 # Đếm các từ xuất hiện trong External_Links
-words_from_external_links = df.select("Id", "External_Links").withColumn("External_Links", filter(col("External_Links"), lambda x: x != "")).filter(size(col("External_Links")) != 0)
-words_from_external_links = words_from_external_links.withColumn("Word", explode("External_Links")).drop("External_Links").groupBy("Id", "Word").agg(count("Word").alias("External_Links"))
-
+words_from_external_links = (
+    df.select("Id", "External_Links")
+    .withColumn("Word", explode(col("External_Links")))
+    .groupBy("Id", "Word")
+    .agg(count("Word").alias("External_Links"))
+    .filter(col("Word") != "")
+)
 # Đếm các từ xuất hiện trong Text
-words_from_text = df.select("Id", "Text").withColumn("Text", filter(col("Text"), lambda x: x != "")).filter(size(col("Text")) != 0)
-words_from_text = words_from_text.withColumn("Word", explode("Text")).drop("Text").groupBy("Id", "Word").agg(count("Word").alias("Text"))
+words_from_text = (
+    df.select("Id", "Text")
+    .withColumn("Word", explode(col("Text")))
+    .groupBy("Id", "Word")
+    .agg(count("Word").alias("Text"))
+    .filter(col("Word") != "")
+)
 
 # Hợp nhất các bảng từ để tổng hợp
 df.unpersist()
@@ -191,9 +213,10 @@ for i in range(num_batches):
     df_2nd = df_2nd.union(tmp_df.limit(1))
 
 df_with_index.unpersist()
+
 # Xóa cột không cần thiết và lưu secondary index
 df_2nd = df_2nd.drop("Document_Counts")
-df_2nd.show()
+# df_2nd.show()
 # Lưu file secondary index
 # df_2nd = df_2nd.coalesce(1)
 df_2nd.coalesce(1).write.mode("overwrite").text("hdfs://namenode:9000/user/root/indexes/secondary_index")

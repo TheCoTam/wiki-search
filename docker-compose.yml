@@ -95,8 +95,17 @@ services:
     # restart: always
     environment:
       - SPARK_MODE=master
+      - SPARK_MASTER_HOST=spark-master  # Đặt tên của Spark Master
+      - SPARK_MASTER_PORT=7077         # Cổng Spark Master
+      - SPARK_MASTER_WEBUI_PORT=8080   # Cổng UI của Spark Master
+      - SPARK_WORKER_WEBUI_PORT=8081  # Cổng UI của Spark Worker
+      - SPARK_MASTER_REST_ENABLED=true # Bật REST API cho Spark Master
+      - SPARK_MASTER_REST_PORT=6066    # Cổng REST API
+      - SPARK_LOG_LEVEL=ERROR
     ports:
+      - "4040:4040"
       - "8080:8080"
+      - "6066:6066"
       - "7077:7077"
     networks:
       - hadoop-network
@@ -110,6 +119,28 @@ services:
       - SPARK_MASTER=spark://spark-master:7077
     depends_on:
       - spark-master
+    ports:
+      - "8081:8081"
+    networks:
+      - hadoop-network
+
+  spark-master-new:
+    image: bitnami/spark:latest
+    container_name: spark-master-new
+    environment:
+      - SPARK_MODE=master
+      - SPARK_MASTER_HOST=spark-master-new
+      - SPARK_MASTER_PORT=7078  # Thay đổi cổng Spark Master
+      - SPARK_MASTER_WEBUI_PORT=8081  # Thay đổi cổng UI của Spark Master
+      - SPARK_WORKER_WEBUI_PORT=8082  # Thay đổi cổng UI của Spark Worker
+      - SPARK_MASTER_REST_ENABLED=true
+      - SPARK_MASTER_REST_PORT=6067  # Thay đổi cổng REST API
+      - SPARK_LOG_LEVEL=ERROR
+    ports:
+      - "4041:4040"  # Thay đổi cổng Spark UI
+      - "8081:8080"  # Thay đổi cổng UI
+      - "6067:6066"  # Thay đổi cổng REST API
+      - "7078:7077"  # Thay đổi cổng Master
     networks:
       - hadoop-network
 
@@ -122,6 +153,8 @@ services:
       - SPARK_MASTER=spark://spark-master:7077
     depends_on:
       - spark-master
+    ports:
+      - "8082:8081"
     networks:
       - hadoop-network
 
@@ -134,6 +167,8 @@ services:
       - SPARK_MASTER=spark://spark-master:7077
     depends_on:
       - spark-master
+    ports:
+      - "8083:8081"
     networks:
       - hadoop-network
 
@@ -145,6 +180,18 @@ services:
   #   # environment:
   #   #   ZOO_MY_ID: 1
   #     # ZOO_SERVERS: server.1=zookeeper:2888:3888
+  #   networks:
+  #     - hadoop-network
+
+  # rabbitmq:
+  #   image: rabbitmq:3-management
+  #   container_name: rabbitmq
+  #   ports:
+  #     - "5672:5672" # Port giao tiếp AMQP
+  #     - "15672:15672" # Port giao diện quản lý web
+  #   # environment:
+  #     # RABBITMQ_DEFAULT_USER: user  # Tên đăng nhập mặc định
+  #     # RABBITMQ_DEFAULT_PASS: password
   #   networks:
   #     - hadoop-network
 

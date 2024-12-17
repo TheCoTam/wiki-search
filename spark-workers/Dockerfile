@@ -8,6 +8,7 @@ RUN ln -sf /usr/bin/python3 /usr/bin/python
 RUN ln -sf /usr/bin/pip3 /usr/bin/pip
 
 RUN pip install numpy nltk happybase
+# pandas
 
 RUN wget -q https://repo1.maven.org/maven2/com/databricks/spark-xml_2.12/0.15.0/spark-xml_2.12-0.15.0.jar -O /tmp/spark-xml_2.12-0.15.0.jar
 RUN mv /tmp/spark-xml_2.12-0.15.0.jar /spark/jars/
